@@ -1,22 +1,21 @@
 import torch
 import data_generation as data
-import numpy as np
 
 class DataSet(torch.utils.data.Dataset):
     def __init__(self, system, M, K, a, b, N, samples):
         super().__init__()
-        self.data = self.generate_data(system, M, K, a, b, N, samples)    # Generate synthetic data x, z, y
-        self.data_length = self.data[0].shape[0]*self.data[0].shape[1]         # Total number of samples
-        self.x_data = torch.from_numpy(self.data[0]).view(self.data_length, system.x_size)  # Convert to tensors and reshape
-        self.z_data = torch.from_numpy(self.data[1]).view(self.data_length, system.z_size)
-        self.ic = self.data[4]
+        self.train_data = self.generate_data(system, M, K, a, b, N, samples)    # Generate synthetic data x, z, y
+        self.data_length = self.train_data[0].shape[0]*self.train_data[0].shape[1]         # Total number of samples
+        self.x_data = torch.from_numpy(self.train_data[0]).view(self.data_length, system.x_size)  # Convert to tensors and reshape
+        self.z_data = torch.from_numpy(self.train_data[1]).view(self.data_length, system.z_size)
+        self.ic = self.train_data[4]
         # Check if output is vector or scalar
-        if self.data[2].ndim > 2:
-            self.output_data = torch.from_numpy(self.data[2]).view(self.data[2].shape[0]*self.data[2].shape[1], self.data[2].shape[2])     # y data
+        if self.train_data[2].ndim > 2:
+            self.output_data = torch.from_numpy(self.train_data[2]).view(self.train_data[2].shape[0]*self.train_data[2].shape[1], self.train_data[2].shape[2])     # y data
         else:
-            self.output_data = torch.from_numpy(self.data[2]).view(self.data[2].shape[0]*self.data[2].shape[1])
+            self.output_data = torch.from_numpy(self.train_data[2]).view(self.train_data[2].shape[0]*self.train_data[2].shape[1])
             
-        self.time = torch.from_numpy(self.data[3])
+        self.time = torch.from_numpy(self.train_data[3])
         self.M = M
         self.K = K
         self.system = system
@@ -26,7 +25,6 @@ class DataSet(torch.utils.data.Dataset):
     
     def generate_data(self,system, M, K, a, b, N, samples):
         ic = system.sample_ic(samples)
-        #ic = np.random.dirichlet([1,1,1], size=samples)
         x_data, output, t = system.generate_data(ic, a, b, N)
         z_data = data.KKL_observer_data(M, K, output, a, b, N)
         
