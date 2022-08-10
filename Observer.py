@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import data_generation as data
 from torch.autograd.functional import jacobian
+import matplotlib as plt
 
 class System_z:
     """
@@ -97,7 +98,7 @@ class Observer:
 
         return x, x_hat, t, error
 
-    def simulate(self, a, b, N, ic, add_noise = False):
+    def simulate(self, a, b, N, ic, mean, std, add_noise = False):
         """
         Online simulation of observer for autonomous systems by the following steps:
         1. Generate y data from system.
@@ -110,7 +111,7 @@ class Observer:
         x, y, t = self.system.generate_data(ic, a, b, N)
         x = torch.from_numpy(np.reshape(x, (N+1,self.system.x_size)))
         if add_noise:
-            noise = np.random.normal(0, 1, (y.shape[0], y.shape[1]))    # Adding Noise
+            noise = np.random.normal(0, 0.1, (y.shape[0], y.shape[1]))    # Adding Noise
             y = y + noise
 
         z = data.KKL_observer_data(self.z_system.M, self.z_system.K, y, a, b, N)
@@ -123,3 +124,11 @@ class Observer:
 
         return x, x_hat, t, error
     
+    def get_average_error(self, a, b, N, ic_samples, add_noise = False):
+        error = 0
+        for idx, ic in enumerate(ic_samples):
+            sim = self.simulate(a, b, N, ic, 0,0, add_noise=add_noise)
+            error += sim[3]
+        error = error / idx
+        time = sim[2]
+        return error, time
