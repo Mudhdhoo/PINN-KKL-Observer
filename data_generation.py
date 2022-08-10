@@ -1,37 +1,5 @@
-import torch
-import matplotlib.pyplot as plt
 import numpy as np
-from smt.sampling_methods import LHS
-
-class System:
-    def __init__(self, function, output, sample_space):
-        self.function = function
-        self.output = output
-        self.sample_space = sample_space
         
-    # LHS Sampling
-    def sample_ic(self,samples):
-        return LHS(xlimits = self.sample_space, random_state = 0)(samples)
-                     
-    def simulate(self,a, b, N, v):
-        x,t = RK4(self.function, a, b, N, v, self.input)
-        return np.array(x), t
-    
-    def generate_data(self, ic, a, b, N):
-        data = []
-        output = []
-        for i in range(0, np.size(ic, axis = 0)):
-            x, t = self.simulate(a,b,N,ic[i])
-            temp = []
-            for j in x:
-                temp.append(self.output(j))
-            data.append(x)    
-            output.append(np.array(temp))
-           # plt.plot(x[:,0], x[:,1])
-       # plt.show()
-      
-        return np.array(data), np.array(output), t   
-
 # Runge-Kutta 4
 def RK4(f, a, b, N, v, inputs):
     h = (b-a) / N
