@@ -1,9 +1,6 @@
 import torch
-from torch import nn
 from torch.autograd.functional import jacobian
-import data_generation as data
 import numpy as np
-import Main_NN
 
 class Loss_Calculator:
     def __init__(self, loss_fn, net, dataset, device):
@@ -75,7 +72,6 @@ class Loss_Calculator:
         dTheta_dT = self.calc_J(z_hat, 'net2')
 
         dTheta_dT_mul_dTdx = torch.bmm(dTheta_dT, dTdx) 
-        #dTheta_dT_mul_dTdx = torch.bmm(dTdx, dTheta_dT) 
         
         pde = dTheta_dT_mul_dTdx - torch.eye(dTheta_dT_mul_dTdx.shape[1], dTheta_dT_mul_dTdx.shape[2]).to(self.device)    # dTheta/dT * dT/dx - I = 0
         
