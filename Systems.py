@@ -1,5 +1,6 @@
 import numpy as np
-from data_generation import System
+from smt.sampling_methods import LHS
+from data_generation import RK4
 
 """
 Systems are implemented by defining 6 essential parameters:
@@ -17,14 +18,51 @@ y_size: Dimension of the output.
 z_size: Dimension of the transformed system.
 
 """
+class System:
+    def __init__(self, function, output, sample_space):
+        self.function = function
+        self.output = output
+        self.sample_space = sample_space
+        
+    # LHS Sampling
+    def sample_ic(self,samples):
+        return LHS(xlimits = self.sample_space, random_state = 0)(samples)
+                     
+    def simulate(self,a, b, N, v):
+        x,t = RK4(self.function, a, b, N, v, self.input)
+        return np.array(x), t
+    
+    def generate_data(self, ic, a, b, N):
+        data = []
+        output = []
+        for i in range(0, np.size(ic, axis = 0)):
+            x, t = self.simulate(a,b,N,ic[i])
+            temp = []
+            for j in x:
+                temp.append(self.output(j))
+            data.append(x)    
+            output.append(np.array(temp))
+      
+        return np.array(data), np.array(output), t   
+
+    def gen_noise(self, mean, std):
+        # To generate process and measurement noise
+        x_noise = np.random.normal(mean, std, (self.x_size))
+        y_noise = np.random.normal(mean, std, (self.y_size))  
+        if self.y_size == 1:
+            y_noise = y_noise[0]
+
+        return x_noise, y_noise
 
 # Reverse Duffing Oscillator
 class RevDuff(System):
-    def __init__(self, sample_space):
+    def __init__(self, sample_space, add_noise = False):
         self.y_size = 1
         self.x_size = 2
         self.z_size = self.y_size*(self.x_size + 1)
         self.input = None
+        self.add_noise = add_noise
+        self.noise = 0  
         super().__init__(self.function, self.output, sample_space)
         
     def function(self, u, x):
@@ -33,13 +71,19 @@ class RevDuff(System):
     
         x1_dot = x2**3
         x2_dot = -x1
-    
-        return np.array([x1_dot, x2_dot])
+
+        if self.add_noise:
+            self.noise = self.gen_noise(0, 0.1)[0]
+
+        return np.array([x1_dot, x2_dot]) + self.noise
     
     def output(self, x):
         y = x[0]
-        
-        return y
+
+        if self.add_noise:
+            self.noise = self.gen_noise(0, 0.1)[1]
+
+        return y + self.noise
         
 # Network SIS
 class SIS(System):
@@ -224,6 +268,9 @@ class RevDuff_NA(System):
         y = x[0]
         
         return y
+    
+    def add_train_input(self, train_input):
+        self.add_train_input = train_input
 
 # Non-Autonomous Van der Pol Oscillator
 class VdP_NA(System):
@@ -246,10 +293,10 @@ class VdP_NA(System):
     def output(self, x):
         y = x[0]
         return y
+        
+    def add_train_input(self, train_input):
+        self.add_train_input = train_input
 
-        
-        
-        
         
         
         
