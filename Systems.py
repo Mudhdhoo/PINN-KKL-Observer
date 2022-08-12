@@ -59,7 +59,7 @@ class RevDuff(System):
     def __init__(self, sample_space, add_noise = False):
         self.y_size = 1
         self.x_size = 2
-        self.z_size = self.y_size*(self.x_size + 1)
+        self.z_size = self.y_size*(2*self.x_size + 1)
         self.input = None
         self.add_noise = add_noise
         self.noise = 0  
