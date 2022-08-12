@@ -16,6 +16,12 @@ class DataSet(torch.utils.data.Dataset):
             self.output_data = torch.from_numpy(self.train_data[2]).view(self.train_data[2].shape[0]*self.train_data[2].shape[1])
             
         self.time = torch.from_numpy(self.train_data[3])
+        self.mean_x = torch.mean(self.x_data, dim = 0)
+        self.mean_z = torch.mean(self.z_data, dim = 0)
+        self.mean_output = torch.mean(self.output_data, dim = 0)
+        self.std_x = torch.std(self.x_data, dim = 0)
+        self.std_z = torch.std(self.z_data, dim = 0)
+        self.std_output = torch.std(self.output_data, dim = 0)
         self.M = M
         self.K = K
         self.system = system
@@ -31,14 +37,10 @@ class DataSet(torch.utils.data.Dataset):
         return x_data, z_data, output, t, ic
     
     def normalize(self):
-        self.mean_x = torch.mean(self.x_data, dim = 0)
-        self.mean_z = torch.mean(self.z_data, dim = 0)
-        self.mean_output = torch.mean(self.output_data, dim = 0)
-
-        self.std_x = torch.std(self.x_data, dim = 0)
-        self.std_z = torch.std(self.z_data, dim = 0)
-        self.std_output = torch.std(self.output_data, dim = 0)
-
+        """
+        Old method to normalize all the data before training.
+        Use the normalizer class instead.
+        """
         self.x_data = (self.x_data - self.mean_x) / self.std_x
         self.z_data = (self.z_data - self.mean_z) / self.std_z
         self.output_data = (self.output_data - self.mean_output) / self.std_output       
