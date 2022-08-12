@@ -36,7 +36,7 @@ class Loss_Calculator:
         f = torch.from_numpy(np.array(f)).float().to(self.device)
         # dT/dx * f(x)
         dTdx_mul_f = torch.bmm(dTdx, torch.unsqueeze(f,2))
-        #z_hat = self.net.forward(x, z)[0]
+
         z_hat = torch.unsqueeze(z_hat, 2)
         M = M.to(torch.float32)
         M_mul_T = torch.matmul(M, z_hat)    # MT(x)
@@ -86,13 +86,6 @@ class Loss_Calculator:
             loss_pde = torch.sum(loss_batch)
         
         return loss_pde
-        
-    def T(self, x):
-        norm = ((x - self.dataset.mean_x) / self.dataset.std_x).float() 
-        out = self.net.net1(norm)
-        denorm = out*self.dataset.std_z + self.dataset.mean_z
-
-        return denorm
 
     # Jacobian calculation
     def calc_J(self, x, NN):
@@ -101,7 +94,7 @@ class Loss_Calculator:
             net = self.net.net1
         if NN == 'net2':
              net = self.net.net2           
-        dTdx = jacobian(net, x, create_graph=False)    # dT/dx 
+        dTdx = jacobian(net, x, create_graph=False)    # dT/dx    ######### !!!!
         # result is m* d_o * m * d_i
         ind = torch.arange(0, m)
         
