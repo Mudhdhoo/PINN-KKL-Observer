@@ -94,7 +94,7 @@ class Loss_Calculator:
             net = self.net.net1
         if NN == 'net2':
              net = self.net.net2           
-        dTdx = jacobian(net, x, create_graph=False)    # dT/dx    ######### !!!!
+        dTdx = jacobian(net, x, create_graph=False)    # dT/dx   
         # result is m* d_o * m * d_i
         ind = torch.arange(0, m)
         
