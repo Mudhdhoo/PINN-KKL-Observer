@@ -25,28 +25,29 @@ class Trainer:
         pde2 = PdeLoss_zx(self.loss_calculator, self.reduction)
         MSE = MSELoss(self.loss_calculator)
         for epoch in range(self.epochs):
-            print(self.optimizer.state_dict())
             loss_sum = 0
             for idx, data in enumerate(self.trainset):
-                x, z, y = data
-                x, z, y = x.to(self.device), z.to(self.device), y.to(self.device)
+                x, z, y, x_ph, y_ph = data      # Normal and physics data
+                x, z, y, x_ph, y_ph = x.to(self.device), z.to(self.device), y.to(self.device), x_ph.to(self.device), y_ph.to(self.device)
                 self.optimizer.zero_grad()
-                z_hat, x_hat, norm_z_hat, norm_x_hat = self.net(x, z)
+                self.net.mode = 'normal'
+                z_hat, x_hat, norm_z_hat, norm_x_hat = self.net(x)
                 if self.normalizer != None:
-                    label_x = self.normalizer.Normalize(x).float()
-                    label_z = self.normalizer.Normalize(z).float()
+                    label_x = self.normalizer.Normalize(x, mode = 'normal').float()
+                    label_z = self.normalizer.Normalize(z, mode = 'normal').float()
                 else:
                     label_x = x
                     label_z = z
 
-                #loss_normal = self.loss_calculator.calc_loss(norm_x_hat, norm_z_hat, label_x, label_z)      # MSE Loss      
+                # Compute MSE loss    
                 loss_normal = MSE(norm_x_hat, norm_z_hat, label_x, label_z)
 
+                # Compute physics loss
                 if with_pde:
-                    #loss_pde1 = self.loss_calculator.calc_pde_loss_xz(x, y, z_hat, self.dataset.system, self.dataset.M, self.dataset.K)     # PDE Loss
-                    #loss_pde2 = self.loss_calculator.calc_pde_loss_zx(x, z_hat)     # PDE Loss
-                    loss_pde1 = pde1(x, y, z_hat)
-                    loss_pde2 = pde2(x, z_hat)
+                    self.net.mode = 'physics'
+                    z_hat_ph = self.net(x_ph)[0]
+                    loss_pde1 = pde1(x_ph, y_ph, z_hat_ph)
+                    loss_pde2 = pde2(x_ph, z_hat_ph)
                     loss = loss_normal + loss_pde1 + loss_pde2
                 else:
                     loss = loss_normal
