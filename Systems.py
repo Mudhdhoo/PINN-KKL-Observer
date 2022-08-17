@@ -19,14 +19,13 @@ z_size: Dimension of the transformed system.
 
 """
 class System:
-    def __init__(self, function, output, sample_space):
+    def __init__(self, function, output):
         self.function = function
         self.output = output
-        self.sample_space = sample_space
         
     # LHS Sampling
-    def sample_ic(self,samples):
-        return LHS(xlimits = self.sample_space, random_state = 0)(samples)
+    def sample_ic(self, sample_space, samples, seed):
+        return LHS(xlimits = sample_space, random_state = seed)(samples)
                      
     def simulate(self,a, b, N, v):
         x,t = RK4(self.function, a, b, N, v, self.input)
@@ -56,14 +55,17 @@ class System:
 
 # Reverse Duffing Oscillator
 class RevDuff(System):
-    def __init__(self, sample_space, add_noise = False):
+    def __init__(self, zdim, add_noise = False):
         self.y_size = 1
         self.x_size = 2
-        self.z_size = self.y_size*(2*self.x_size + 1)
+        if zdim == 5:
+            self.z_size = self.y_size*(2*self.x_size + 1)
+        if zdim == 3:
+            self.z_size = self.y_size*(1*self.x_size + 1)           
         self.input = None
         self.add_noise = add_noise
         self.noise = 0  
-        super().__init__(self.function, self.output, sample_space)
+        super().__init__(self.function, self.output)
         
     def function(self, u, x):
         x1 = x[0]
@@ -102,13 +104,16 @@ class SIS(System):
         
 # Van der Pol Oscillator
 class VdP(System):
-    def __init__(self, sample_space, my = 3):
+    def __init__(self, zdim, my = 3):
         self.x_size = 2
         self.y_size = 1
-        self.z_size = self.y_size*(self.x_size + 1)
+        if zdim == 5:
+            self.z_size = self.y_size*(2*self.x_size + 1)
+        if zdim == 3:
+            self.z_size = self.y_size*(1*self.x_size + 1) 
         self.my = my
         self.input = None
-        super().__init__(self.function, self.output, sample_space)
+        super().__init__(self.function, self.output)
         
     def function(self, u, x):
         x1 = x[0]
@@ -125,12 +130,12 @@ class VdP(System):
         
 # Polynomial system
 class Polynomial(System):
-    def __init__(self, sample_space):
+    def __init__(self):
         self.x_size = 2
         self.y_size = 1
         self.z_size = self.y_size*(self.x_size + 1)
         self.input = None
-        super().__init__(self.function, self.output, sample_space)
+        super().__init__(self.function, self.output)
         
     def function(self, u, x):
         x1 = x[0]
@@ -159,7 +164,7 @@ class RobotArm(System):
         
 # Chua's Circuit
 class Chua(System):
-    def __init__(self, sample_space, alpha, beta, gamma, a, b):
+    def __init__(self, alpha, beta, gamma, a, b):
         self.x_size = 3
         self.y_size = 1
         self.z_size = self.y_size*(self.x_size + 1)
@@ -170,7 +175,7 @@ class Chua(System):
         self.a = a
         self.b = b
         self.input = None
-        super().__init__(self.function, self.output, sample_space)  
+        super().__init__(self.function, self.output)  
         
     def function(self, u, x):
         x1 = x[0]
@@ -189,7 +194,7 @@ class Chua(System):
     
 # Rössler's System
 class Rossler(System):
-    def __init__(self, sample_space, a, b, c):
+    def __init__(self, a, b, c):
         self.x_size = 3
         self.y_size = 1
         self.z_size = self.y_size*(self.x_size + 1)
@@ -197,7 +202,7 @@ class Rossler(System):
         self.a = a
         self.b = b
         self.c = c
-        super().__init__(self.function, self.output, sample_space)  
+        super().__init__(self.function, self.output)  
         
     def function(self, u, x):
         x1 = x[0]
@@ -216,7 +221,7 @@ class Rossler(System):
 
 # SIR
 class SIR(System):
-    def __init__(self, sample_space, beta, gamma, N):
+    def __init__(self, beta, gamma, N):
         self.x_size = 3
         self.y_size = 2
         self.z_size = self.y_size*(self.x_size + 1)
@@ -224,7 +229,7 @@ class SIR(System):
         self.gamma = gamma
         self.N = N
         self.input = None
-        super().__init__(self.function, self.output, sample_space)  
+        super().__init__(self.function, self.output)  
       
     def function(self, u, x):
         S = x[0]
@@ -248,12 +253,12 @@ class SIR(System):
     
 # Non-Autonomous Reverse Duffing Oscillator
 class RevDuff_NA(System):
-    def __init__(self, sample_space, input):
+    def __init__(self, input):
         self.y_size = 1
         self.x_size = 2
         self.z_size = self.y_size*(self.x_size + 1)
         self.input = input
-        super().__init__(self.function, self.output, sample_space)
+        super().__init__(self.function, self.output)
         
     def function(self, u, x):
         x1 = x[0]
@@ -274,13 +279,13 @@ class RevDuff_NA(System):
 
 # Non-Autonomous Van der Pol Oscillator
 class VdP_NA(System):
-    def __init__(self, sample_space, input, my = 3):
+    def __init__(self, input, my = 3):
         self.x_size = 2
         self.y_size = 1
         self.z_size = self.y_size*(self.x_size + 1)
         self.my = my
         self.input = input
-        super().__init__(self.function, self.output, sample_space)
+        super().__init__(self.function, self.output)
         
     def function(self, u, x):
         x1 = x[0]
