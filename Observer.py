@@ -111,12 +111,13 @@ class Observer:
         x, y, t = self.system.generate_data(ic, a, b, N)
         x = torch.from_numpy(np.reshape(x, (N+1,self.system.x_size)))
         if add_noise:
-            noise = np.random.normal(0, 0.1, (y.shape[0], y.shape[1]))    # Adding Noise
+            np.random.seed(123)
+            noise = np.random.normal(0, 0.07, (y.shape[0], y.shape[1]))    # Adding Noise
             y = y + noise
 
         z = data.KKL_observer_data(self.z_system.M, self.z_system.K, y, a, b, N)
         z = torch.from_numpy(z).view(N+1,self.system.z_size).float()
-        #z = ((z - mean) / std).float()      # Normalize input
+
         with torch.no_grad():
             x_hat = self.T_inv(z)
 
@@ -132,3 +133,4 @@ class Observer:
         error = error / idx
         time = sim[2]
         return error, time
+
