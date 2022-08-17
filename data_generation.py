@@ -1,5 +1,5 @@
-import numpy as np
-        
+import numpy as np 
+
 # Runge-Kutta 4
 def RK4(f, a, b, N, v, inputs):
     h = (b-a) / N
