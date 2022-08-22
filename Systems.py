@@ -167,7 +167,7 @@ class Chua(System):
     def __init__(self, alpha, beta, gamma, a, b):
         self.x_size = 3
         self.y_size = 1
-        self.z_size = self.y_size*(self.x_size + 1)
+        self.z_size = self.y_size*(2*self.x_size + 1)
         self.g = lambda x: 0.5*(a - b)*(np.abs(x[0] + 1) - np.abs(x[0] - 1))
         self.alpha = alpha
         self.beta = beta
