@@ -29,8 +29,7 @@ class MSELoss(nn.Module):
     def __init__(self, loss_calculator):
         super(MSELoss, self).__init__()
         self.loss_calc = loss_calculator
-        self.lagrange = nn.Parameter(torch.tensor(1.0))
 
     def forward(self, x_hat, z_hat, x, z):
         loss = self.loss_calc.calc_loss(x_hat, z_hat, x, z)
-        return loss*self.lagrange
+        return loss
