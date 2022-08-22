@@ -22,9 +22,9 @@ def RK4(f, a, b, N, v, inputs):
         time = t[-1] + h
         t.append(time)
                  
-    return x,np.array(t)
+    return x, np.array(t)
 
-def KKL_observer_data(M, K, y, a, b, N):
+def KKL_observer_data(M, K, y, a, b, ic, N):
     scalar_y = False
     data = []
     size_z = M.shape[0]
@@ -37,8 +37,8 @@ def KKL_observer_data(M, K, y, a, b, N):
         f = lambda y,z: np.matmul(M,z) + K*y 
         scalar_y = True
         
-    for output in y:
-        x = [[0]*size_z]
+    for output, init in zip(y, ic):
+        x = [np.ndarray.tolist(init)]
         v = np.array(x).T
         if scalar_y == True:
             truncated_output = np.delete(output,0)    # Ignore the first output value as we already have the initial conditions
