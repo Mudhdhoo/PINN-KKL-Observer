@@ -1,10 +1,47 @@
 import torch
 import Loss_Calculator as L
 from Loss_functions import *
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from Dataset import DataSet
+    from NN import Main_Network
 
 class Trainer:
-    def __init__(self, dataset, epochs, optimizer, net, loss_fn, batch_size, shuffle = True, scheduler = None, reduction = 'mean'):
+    """
+    Trainer class containing the training loop.
+
+    ---------------- Parameters ----------------
+    dataset: Dataset
+        Dataset object from Dataset.py.
+
+    epochs: int
+        Number of training epochs.
+
+    optimizer: torch.optim
+        Torch optimizer object.
+
+    net: Main_Network
+        Neural network object from NN.py.
+
+    loss_fn: torch.nn
+        Loss function from the torch.nn module.
+
+    batch_size: int
+        Dataloader batch size.
+
+    shuffle: bool
+        If True, the data is shuffled, otherwise not.
+
+    scheduler: Optional
+        Learning rate scheduler from torch.optim.lr_scheduler.
+
+    reduction: str
+        Either mean or sum.
+        If mean, the mean loss of each batch is taken.
+        If sum, the sum of the loss of each batch is used instead.
+    """
+    def __init__(self, dataset: DataSet, epochs: int, optimizer: torch.optim, net: Main_Network, loss_fn: torch.nn, batch_size: int, shuffle: bool = True, scheduler: Optional[None] = None, reduction: str = 'mean') -> None:
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.dataset = dataset
         self.trainset = torch.utils.data.DataLoader(dataset, batch_size = batch_size, shuffle = shuffle)
@@ -20,12 +57,10 @@ class Trainer:
         #self.optim2 = torch.optim.Adam(self.pde1.parameters(), lr = 0.0001)
         print('Device:', self.device)
         
-    def train(self, with_pde = True):
-        # M = self.dataset.M
-        # K = self.dataset.K
-        # sys = self.dataset.system
-        #pde1 = PdeLoss_xz(M, K, sys, self.loss_calculator, self.reduction)
-        #pde2 = PdeLoss_zx(self.loss_calculator, self.reduction)
+    def train(self, with_pde: bool = True) -> None:
+        """
+        Training loop.
+        """
         MSE = MSELoss(self.loss_calculator)
         for epoch in range(self.epochs):
             loss_sum = 0
