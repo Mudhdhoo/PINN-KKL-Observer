@@ -2,7 +2,6 @@ import torch
 import numpy as np
 import data_generation as data
 from torch.autograd.functional import jacobian
-import matplotlib as plt
 
 class System_z:
     """
@@ -112,10 +111,11 @@ class Observer:
         x = torch.from_numpy(np.reshape(x, (N+1,self.system.x_size)))
         if add_noise:
             np.random.seed(123)
-            noise = np.random.normal(0, 0.07, (y.shape[0], y.shape[1]))    # Adding Noise
+            noise = np.random.normal(0, 0.03, (y.shape[0], y.shape[1]))    # Adding Noise
             y = y + noise
 
-        z = data.KKL_observer_data(self.z_system.M, self.z_system.K, y, a, b, N)
+        ic_z = np.zeros([1,self.system.z_size])
+        z = data.KKL_observer_data(self.z_system.M, self.z_system.K, y, a, b, ic_z, N)
         z = torch.from_numpy(z).view(N+1,self.system.z_size).float()
 
         with torch.no_grad():
