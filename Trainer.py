@@ -15,14 +15,17 @@ class Trainer:
         self.loss_calculator = L.Loss_Calculator(loss_fn, self.net, self.dataset, self.device)
         self.normalizer = net.normalizer
         self.reduction = reduction
+        self.pde1 = PdeLoss_xz(self.dataset.M, self.dataset.K, self.dataset.system, self.loss_calculator, self.reduction)
+       # self.pde2 = PdeLoss_zx(self.loss_calculator, self.reduction)
+        #self.optim2 = torch.optim.Adam(self.pde1.parameters(), lr = 0.0001)
         print('Device:', self.device)
         
     def train(self, with_pde = True):
-        M = self.dataset.M
-        K = self.dataset.K
-        sys = self.dataset.system
-        pde1 = PdeLoss_xz(M, K, sys, self.loss_calculator, self.reduction)
-        pde2 = PdeLoss_zx(self.loss_calculator, self.reduction)
+        # M = self.dataset.M
+        # K = self.dataset.K
+        # sys = self.dataset.system
+        #pde1 = PdeLoss_xz(M, K, sys, self.loss_calculator, self.reduction)
+        #pde2 = PdeLoss_zx(self.loss_calculator, self.reduction)
         MSE = MSELoss(self.loss_calculator)
         for epoch in range(self.epochs):
             loss_sum = 0
@@ -46,16 +49,15 @@ class Trainer:
                 if with_pde:
                     self.net.mode = 'physics'
                     z_hat_ph = self.net(x_ph)[0]
-                    loss_pde1 = pde1(x_ph, y_ph, z_hat_ph)
-                    loss_pde2 = pde2(x_ph, z_hat_ph)
-                    loss = loss_normal + loss_pde1 + loss_pde2
+                    loss_pde1 = self.pde1(x_ph, y_ph, z_hat_ph)
+                    #loss_pde2 = self.pde2(x_ph, z_hat_ph)
+                    loss = loss_normal + loss_pde1 #+ loss_pde2
                 else:
                     loss = loss_normal
     
                 loss_sum += loss
                 loss.backward()
                 self.optimizer.step()
-                
             training_loss = (loss_sum / idx).item()
             
             if self.scheduler == None:
