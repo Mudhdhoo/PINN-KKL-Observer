@@ -1,14 +1,17 @@
 import torch
 import data_generation as data
 import numpy as np
-from Systems import System
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from Systems import System
 
 class DataSet(torch.utils.data.Dataset):
     """
     Dataset class to generate synthetic x, y and z data.
     The set is split up into data for normal loss and data for physics loss.
 
-    -------- Parameters --------
+    ---------------- Parameters ----------------
     system: Systems
         A system instance created from classes within Systems.py
 
