@@ -1,3 +1,6 @@
+Data from est, noise and truth files are simulated within the training domain.
+Data from outside files are simulated outside of the training domain.
+
 Initial condition sample space: [-1, 1]^2
 Number of trajectories: 50
 Number of intervals: 1000
@@ -9,13 +12,19 @@ Torch seed: 9
 Hidden layers: 3
 Size of hidden layers: 50
 Activation function: ReLU
+Optimizer = Adam
 Normalized data: Yes
 Epochs: 15
 Initial learning rate: 0.001
+lambda: 0.10
 Scheduler settings:
+    type: torch.optim.lr_scheduler.ReduceLROnPlateau
     patience: 2
     factor: 0.1
     threshold: 0.0001
 Batch size: 32
-Simulation ic: [0.5, 0.5]
-Noise: Normal distribution, 0 mean, 0.03 std
+Noise: Normal distribution, 0 mean, 0.05 std
+Simulation within training domain ic: [0.5, 0.5]
+Simulation outside training domain ic: [1.5, 1.5]
+
+
