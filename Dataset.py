@@ -1,10 +1,7 @@
 import torch
 import data_generation as data
 import numpy as np
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from Systems import System
+from Systems import System
 
 class DataSet(torch.utils.data.Dataset):
     """
@@ -81,7 +78,7 @@ class DataSet(torch.utils.data.Dataset):
             self.x_data = x
             self.z_data = z
             self.output_data = y
-            self.ic = self.train_data[4]
+            self.ic_normal = self.train_data[4]
             #-----------------------------------------------------------------
 
             # ----------------------- Physics loss data ----------------------- 
@@ -104,8 +101,17 @@ class DataSet(torch.utils.data.Dataset):
             self.x_data_ph = x[1::2]
             self.z_data_ph = z[1::2]
             self.output_data_ph = y[1::2]
+            self.ic = self.train_data[4]
+        elif PINN_sample_mode == 'no physics':
+            self.x_data = x
+            self.z_data = z
+            self.output_data = y
+            self.x_data_ph = x
+            self.z_data_ph = y
+            self.output_data_ph = y
+            self.ic = self.train_data[4]
         else:
-            raise Exception('Sample mode must be either ''split set'' or ''split traj''.')
+            raise Exception('Sample mode must be either ''split set'', ''split traj'' or ''no physics''.')
 
         # ----------------------- Mean and standard deviation -----------------------     
         self.mean_x = torch.mean(self.x_data, dim = 0)
