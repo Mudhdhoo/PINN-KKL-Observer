@@ -23,8 +23,8 @@ class Normalizer:
         physics or normal dataset. The correct mean and standard deviations are chosen 
         according to those parameters.
         """
-        if tensor.size()[1] == self.sys.x_size:
-            if mode == 'physics':
+        if tensor.size()[1] == self.sys.x_size:     # Check if x or z input
+            if mode == 'physics':       # Check if physics or normal data point
                 mean = self.mean_x_ph
                 std = self.std_x
             else:
