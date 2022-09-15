@@ -36,14 +36,17 @@ class System_z:
         return z_dot
 
 class Observer:
-    def __init__(self, system, z_system, net):
+    def __init__(self, system, z_system, net, a ,b ,N):
         self.system = system
         self.z_system = z_system
         self.f = z_system.z_dynamics()
         self.T = net.net1
         self.T_inv = net.net2
+        self.a = a
+        self.b = b
+        self.N = N
     
-    def simulate_NA(self, a, b, N, ic, u0, g):
+    def simulate_NA(self, ic, u0, g):
         """
         Online simulation of observer for non-autonomous input-affine systems by the following steps:
         1. Generate y data from the system with input u.
@@ -54,11 +57,11 @@ class Observer:
             x_hat = T_inv(t, z)
 
         """
-        x, y, t = self.system.generate_data(ic, a, b, N)     # Generate y data
-        x = torch.from_numpy(np.reshape(x, (N+1,self.system.x_size)))
+        x, y, t = self.system.generate_data(ic, self.a, self.b, self.N)     # Generate y data
+        x = torch.from_numpy(np.reshape(x, (self.N+1,self.system.x_size)))
         u = self.system.input
         size_z = self.z_system.M.shape[0]
-        h = (b-a) / N
+        h = (self.b-self.a) / self.N
 
         z = [[0]*size_z]
         v = np.array(z).T
@@ -97,7 +100,7 @@ class Observer:
 
         return x, x_hat, t, error
 
-    def simulate(self, a, b, N, ic, mean, std, add_noise = False):
+    def simulate(self, ic, add_noise = False):
         """
         Online simulation of observer for autonomous systems by the following steps:
         1. Generate y data from system.
@@ -107,16 +110,16 @@ class Observer:
             x_hat = T_inv(t, z)
 
         """
-        x, y, t = self.system.generate_data(ic, a, b, N)
-        x = torch.from_numpy(np.reshape(x, (N+1,self.system.x_size)))
+        x, y, t = self.system.generate_data(ic, self.a, self.b, self.N)
+        x = torch.from_numpy(np.reshape(x, (self.N+1,self.system.x_size)))
         if add_noise:
             np.random.seed(123)
-            noise = np.random.normal(0, 0.03, (y.shape[0], y.shape[1]))    # Adding Noise
+            noise = np.random.normal(0, 0.05, y.shape)    # Adding Noise
             y = y + noise
 
         ic_z = np.zeros([1,self.system.z_size])
-        z = data.KKL_observer_data(self.z_system.M, self.z_system.K, y, a, b, ic_z, N)
-        z = torch.from_numpy(z).view(N+1,self.system.z_size).float()
+        z = data.KKL_observer_data(self.z_system.M, self.z_system.K, y, self.a, self.b, ic_z, self.N)
+        z = torch.from_numpy(z).view(self.N+1,self.system.z_size).float()
 
         with torch.no_grad():
             x_hat = self.T_inv(z)
@@ -125,12 +128,45 @@ class Observer:
 
         return x, x_hat, t, error
     
-    def get_average_error(self, a, b, N, ic_samples, add_noise = False):
-        error = 0
+    def sim_multi(self, ic_samples, add_noise = False):
+        avr_error = 0
+        errors = []
+        x_traj = []
+        x_hat_traj = []
         for idx, ic in enumerate(ic_samples):
-            sim = self.simulate(a, b, N, ic, 0,0, add_noise=add_noise)
-            error += sim[3]
-        error = error / idx
-        time = sim[2]
-        return error, time
+            x, x_hat, time, error = self.simulate(ic, add_noise=add_noise)
+            avr_error += error
+            errors.append(error.numpy())
+            x_traj.append(x.numpy())
+            x_hat_traj.append(x_hat.numpy())
+        avr_error = avr_error / idx
+        
+        return np.array(x_traj), np.array(x_hat_traj), np.array(errors), avr_error, time
 
+    def calc_gen_metric(self, train_ic, test_ic):
+        GE = []
+        p = len(train_ic)
+        MSE = torch.nn.MSELoss()
+        train_ic = np.expand_dims(train_ic, axis = 1)
+        x_train, x_hat_train, _, _, time1 = self.sim_multi(train_ic)
+
+        train_error = 0
+        for true, est in zip(x_train, x_hat_train):
+            true = torch.from_numpy(true)
+            est = torch.from_numpy(est)
+            train_error += MSE(true, est)
+        
+        train_error_av = train_error / p
+
+        x_test, x_hat_test, _, _, time2 = self.sim_multi(test_ic)
+        for true, est in zip(x_test, x_hat_test):
+            true = torch.from_numpy(true)
+            est = torch.from_numpy(est)
+            test_error = MSE(true, est)
+            metric = torch.abs(train_error_av - test_error)
+            GE.append(float(metric))
+
+        return GE         
+
+
+        
