@@ -53,9 +53,17 @@ class System:
 
         return x_noise, y_noise
 
+    def toggle_noise(self):
+        if self.add_noise:
+            self.add_noise = False
+        else:
+            self.add_noise = True
+
+# --------------- Autonomous Systems --------------- 
+
 # Reverse Duffing Oscillator
 class RevDuff(System):
-    def __init__(self, zdim, add_noise = False):
+    def __init__(self, zdim, add_noise = False, noise_mean = 0, noise_std = 0.01):
         self.y_size = 1
         self.x_size = 2
         if zdim == 5:
@@ -65,6 +73,8 @@ class RevDuff(System):
         self.input = None
         self.add_noise = add_noise
         self.noise = 0  
+        self.noise_mean = noise_mean
+        self.noise_std = noise_std
         super().__init__(self.function, self.output)
         
     def function(self, u, x):
@@ -75,7 +85,7 @@ class RevDuff(System):
         x2_dot = -x1
 
         if self.add_noise:
-            self.noise = self.gen_noise(0, 0.1)[0]
+            self.noise = self.gen_noise(self.noise_mean, self.noise_std)[0]
 
         return np.array([x1_dot, x2_dot]) + self.noise
     
@@ -83,7 +93,7 @@ class RevDuff(System):
         y = x[0]
 
         if self.add_noise:
-            self.noise = self.gen_noise(0, 0.1)[1]
+            self.noise = self.gen_noise(self.noise_mean, self.noise_std)[1]
 
         return y + self.noise
         
@@ -149,18 +159,7 @@ class Polynomial(System):
     def output(self, x):
         y = x[0]
             
-        return y
-        
-# Robot Arm
-class RobotArm(System):
-    def __init__(self, sample_space, A, B, C, f, u):
-        self.x_size = 4
-        self.y_size = 2
-        self.z_size = self.y_size*(self.x_size + 1)      
-        self.function = lambda u, x: A@x + f(x) + B@u
-        self.output = lambda x: C@x
-        self.input = u
-        super().__init__(self.function, self.output, sample_space)        
+        return y      
         
 # Chua's Circuit
 class Chua(System):
@@ -187,6 +186,35 @@ class Chua(System):
         x3_dot = -self.beta*x2 - self.gamma*x3
         
         return np.array([x1_dot, x2_dot, x3_dot])
+
+# Smooth Chua's Circuit
+class Chua_Smooth(System):
+    """
+    Source: https://www.math.spbu.ru/user/nk/PDF/2012-Physica-D-Hidden-attractor-Chua-circuit-smooth.pdf
+    """
+    def __init__(self, alpha, beta, gamma, m0, m1):
+        self.x_size = 3
+        self.y_size = 1
+        self.z_size = self.y_size*(2*self.x_size + 1)
+        self.g = lambda x: m1*x + (m0 - m1)*np.tanh(x)
+        self.alpha = alpha
+        self.beta = beta
+        self.gamma = gamma
+        self.m0 = m0
+        self.m1 = m1
+        self.input = None
+        super().__init__(self.function, self.output)  
+        
+    def function(self, u, x):
+        x1 = x[0]
+        x2 = x[1]
+        x3 = x[2]
+        
+        x1_dot = self.alpha*(x2 - x1) - self.alpha*self.g(x1)
+        x2_dot = x1 - x2 + x3
+        x3_dot = -self.beta*x2 - self.gamma*x3
+        
+        return np.array([x1_dot, x2_dot, x3_dot])
     
     def output(self, x):
         y = x[2]
@@ -194,14 +222,18 @@ class Chua(System):
     
 # Rössler's System
 class Rossler(System):
-    def __init__(self, a, b, c):
+    def __init__(self, a, b, c, add_noise = False, noise_mean = 0, noise_std = 0.01):
         self.x_size = 3
         self.y_size = 1
-        self.z_size = self.y_size*(self.x_size + 1)
+        self.z_size = self.y_size*(2*self.x_size + 1)
         self.input = None
         self.a = a
         self.b = b
         self.c = c
+        self.add_noise = add_noise
+        self.noise = 0  
+        self.noise_mean = noise_mean
+        self.noise_std = noise_std
         super().__init__(self.function, self.output)  
         
     def function(self, u, x):
@@ -213,11 +245,18 @@ class Rossler(System):
         x2_dot = x1 + self.a*x2
         x3_dot = self.b + x3*(x1 - self.c)
         
-        return np.array([x1_dot, x2_dot, x3_dot])
+        if self.add_noise:
+            self.noise = self.gen_noise(self.noise_mean, self.noise_std)[0]
+
+        return np.array([x1_dot, x2_dot, x3_dot]) + self.noise
     
     def output(self, x):
-        y = x[0]
-        return y
+        y = x[1]
+
+        if self.add_noise:
+            self.noise = self.gen_noise(self.noise_mean, self.noise_std)[1]
+
+        return y + self.noise
 
 # SIR
 class SIR(System):
@@ -251,6 +290,71 @@ class SIR(System):
 
         return y
     
+class Network_SIR(System):
+    def __init__(self, D, W, G, C):
+        self.x_size = 10
+        self.y_size = 5
+        self.z_size = self.y_size*(2*self.x_size + 1)
+        self.D = D
+        self.W = W
+        self.G = G
+        self.C = C
+        self.input = None
+        super().__init__(self.function, self.output)  
+
+    def function(self,u ,x):
+        S = x[0: int(self.x_size / 2)]
+        I = np.expand_dims(x[int(self.x_size  / 2):], axis = 1)
+
+        S_dot = -np.diag(S) @ self.D @ self.W @ I
+        I_dot = np.diag(S) @ self.D @ self. W @ I - self.G @ I
+        
+        x_dot = np.concatenate((S_dot, I_dot), axis = 0)
+        x_dot = np.squeeze(x_dot)
+
+        return x_dot
+
+    def output(self, x):
+        return self.C @ x
+
+# Lorenz system
+class Lorenz(System):
+    def __init__(self, rho, sigma, beta, add_noise = False, noise_mean = 0, noise_std = 0.01):
+        super().__init__(self.function, self.output)
+        self.x_size = 3
+        self.y_size = 1
+        self.z_size = self.z_size = self.y_size*(2*self.x_size + 1)
+        self.input = None
+        self.rho = rho
+        self.sigma = sigma
+        self.beta = beta
+        self.add_noise = add_noise
+        self.noise_mean = noise_mean
+        self.noise_std = noise_std
+        self.noise = 0
+
+    def function(self, u, x):
+        x1 = x[0]
+        x2 = x[1] 
+        x3 = x[2]
+
+        x1_dot = self.sigma*(x2 - x1)
+        x2_dot = x1*(self.rho - x3) - x2
+        x3_dot = x1*x2 - self.beta*x3
+
+        if self.add_noise:
+            self.noise = self.gen_noise(self.noise_mean, self.noise_std)[0]
+
+        return np.array([x1_dot, x2_dot, x3_dot]) + self.noise
+
+    def output(self, x):
+        if self.add_noise:
+            self.noise = self.gen_noise(self.noise_mean, self.noise_std)[1]
+
+        return x[1] + self.noise
+
+# --------------- Non-Autonomous Systems --------------- 
+
 # Non-Autonomous Reverse Duffing Oscillator
 class RevDuff_NA(System):
     def __init__(self, input):
@@ -304,11 +408,6 @@ class VdP_NA(System):
 
         
         
-        
-        
-        
-        
-        
-        
+     
         
         
