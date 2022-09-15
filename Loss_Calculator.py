@@ -16,7 +16,8 @@ class Loss_Calculator:
         loss_xz = self.loss_fn(z_hat, z)
         loss_zx = self.loss_fn(x_hat, x)
 
-        loss = loss_xz + loss_zx
+        #loss = loss_xz + loss_zx
+        loss = loss_zx
         
         return loss
     
