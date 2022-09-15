@@ -2,10 +2,8 @@ import torch
 import Loss_Calculator as L
 from Loss_functions import *
 from typing import TYPE_CHECKING, Optional
-
-if TYPE_CHECKING:
-    from Dataset import DataSet
-    from NN import Main_Network
+from Dataset import DataSet
+from NN import Main_Network
 
 class Trainer:
     """
@@ -53,6 +51,7 @@ class Trainer:
         self.normalizer = net.normalizer
         self.reduction = reduction
         self.pde1 = PdeLoss_xz(self.dataset.M, self.dataset.K, self.dataset.system, self.loss_calculator, self.reduction)
+        #self.optimizer = torch.optim.Adam([{'params':self.net.parameters()}, {'params':self.pde1.lagrange}], lr = 0.001)
        # self.pde2 = PdeLoss_zx(self.loss_calculator, self.reduction)
         #self.optim2 = torch.optim.Adam(self.pde1.parameters(), lr = 0.0001)
         print('Device:', self.device)
@@ -66,7 +65,9 @@ class Trainer:
             loss_sum = 0
             for idx, data in enumerate(self.trainset):
                 x, z, y, x_ph, y_ph = data      # Normal and physics data
-                x, z, y, x_ph, y_ph = x.to(self.device), z.to(self.device), y.to(self.device), x_ph.to(self.device), y_ph.to(self.device)
+                x, z, y = x.to(self.device), z.to(self.device), y.to(self.device)
+                if with_pde:
+                    x_ph, y_ph = x_ph.to(self.device), y_ph.to(self.device)
                 self.optimizer.zero_grad()
                 self.net.mode = 'normal'
                 z_hat, x_hat, norm_z_hat, norm_x_hat = self.net(x)
@@ -93,6 +94,7 @@ class Trainer:
                 loss_sum += loss
                 loss.backward()
                 self.optimizer.step()
+                #print(self.pde1.lagrange)
             training_loss = (loss_sum / idx).item()
             
             if self.scheduler == None:
