@@ -9,21 +9,22 @@ class PdeLoss_xz(nn.Module):
         self.system = system
         self.loss_calc = loss_calculator
         self.reduction = reduction
-        self.lagrange = nn.Parameter(torch.tensor(0.12))
+        self.lmbda = nn.Parameter(torch.tensor(5.0))
 
     def forward(self, x, y, z_hat):
         loss = self.loss_calc.calc_pde_loss_xz(x, y, z_hat, self.system, self.M, self.K, self.reduction)
-        return self.lagrange*loss
+        return self.lmbda*loss
 
 class PdeLoss_zx(nn.Module):
     def __init__(self, loss_calculator, reduction = 'mean'):
         super(PdeLoss_zx, self).__init__()
         self.loss_calc = loss_calculator
         self.reduction = reduction
+        self.lmbda = nn.Parameter(torch.tensor(5.0))
 
     def forward(self, x, z_hat):
         loss = self.loss_calc.calc_pde_loss_zx(x, z_hat, self.reduction)
-        return loss
+        return self.lmbda*loss
 
 class MSELoss(nn.Module):
     def __init__(self, loss_calculator):
